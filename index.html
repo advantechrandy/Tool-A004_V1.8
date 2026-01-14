@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>常用開孔率計算</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --metal-bg: #1a1a1b;
+            --panel-bg: #2a2a2e;
+            --accent-orange: #ff9d00;
+            --accent-blue: #00d4ff;
+            --danger-red: #ff4d4d;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+        }
+
+        body {
+            font-family: 'Share Tech Mono', 'Noto Sans TC', sans-serif;
+            background-color: var(--metal-bg);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .industrial-panel {
+            background: var(--panel-bg);
+            border: 2px solid #3f3f46;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .industrial-panel::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-blue));
+        }
+
+        .lcd-display {
+            background: #000000;
+            border: 2px solid #333;
+            box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.2);
+        }
+
+        .input-field {
+            background: #1a1a1b;
+            border: 1px solid #444;
+            color: var(--accent-orange);
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+            outline: none;
+        }
+
+        .btn-calc {
+            background: var(--accent-orange);
+            color: #000;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+        }
+
+        .btn-calc:hover:not(:disabled) {
+            background: #ffb700;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 157, 0, 0.4);
+        }
+
+        .btn-calc:disabled {
+            background: #444;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        .label-text {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .warning-text {
+            color: var(--danger-red);
+            font-size: 0.7rem;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        .custom-radio input:checked + div {
+            border-color: var(--accent-blue);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .simulation-area {
+            background-color: #0c0c0d;
+            border: 1px solid #111;
+        }
+
+        #svg-circular, #svg-hex {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .hidden-svg {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="industrial-panel w-full max-w-4xl rounded-lg p-6 md:p-10">
+    <div class="flex flex-col md:flex-row gap-10">
+        
+        <!-- 左側：輸入與選擇 -->
+        <div class="flex-1 space-y-8">
+            <header>
+                <h1 class="text-3xl font-black italic tracking-tighter text-white uppercase">
+                    常用開孔率計算 <span class="text-orange-500">v1.6</span>
+                </h1>
+                <p class="text-xs text-zinc-500 font-bold mt-1">CREATED BY RANDY CHEN</p>
+            </header>
+
+            <!-- 排列選擇 -->
+            <div class="space-y-3">
+                <span class="label-text">Select Arrangement</span>
+                <div class="grid grid-cols-1 gap-3">
+                    <label class="custom-radio cursor-pointer">
+                        <input type="radio" name="arrangement" value="circular-staggered" checked class="hidden">
+                        <div class="border border-zinc-700 p-4 rounded bg-zinc-800/50 transition-all flex items-center gap-4">
+                            <div class="indicator w-4 h-4 rounded-full border-2 border-zinc-500 flex items-center justify-center">
+                                <div class="dot w-2 h-2 rounded-full bg-blue-400"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-zinc-200">圓孔交錯 60°</p>
+                                <p class="text-[10px] text-zinc-500">Circular Staggered 60 Degree</p>
+                            </div>
+                        </div>
+                    </label>
+
+                    <label class="custom-radio cursor-pointer">
+                        <input type="radio" name="arrangement" value="hexagonal-staggered" class="hidden">
+                        <div class="border border-zinc-700 p-4 rounded bg-zinc-800/50 transition-all flex items-center gap-4">
+                            <div class="indicator w-4 h-4 rounded-full border-2 border-zinc-500 flex items-center justify-center">
+                                <div class="dot w-2 h-2 rounded-full bg-blue-400"></div>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-zinc-200">六角孔排列</p>
+                                <p class="text-[10px] text-zinc-500">Hexagonal (Honeycomb) Pattern</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 數值輸入 -->
+            <div class="grid grid-cols-1 gap-6">
+                <div class="relative">
+                    <label class="label-text block mb-2" id="label-d">孔直徑 D (mm)</label>
+                    <input type="number" id="input-d" step="0.01" class="input-field w-full p-4 text-xl rounded" placeholder="例如: 5.0">
+                    <div id="warn-d" class="warning-text mt-1 hidden">ERROR: D MUST BE LESS THAN P</div>
+                </div>
+                <div>
+                    <label class="label-text block mb-2" id="label-p">中心距 P (mm)</label>
+                    <input type="number" id="input-p" step="0.01" class="input-field w-full p-4 text-xl rounded" placeholder="例如: 8.0">
+                </div>
+            </div>
+
+            <button id="btn-calc" class="btn-calc w-full py-4 rounded shadow-lg" disabled>
+                Process Analysis
+            </button>
+        </div>
+
+        <!-- 右側：結果與示意圖 -->
+        <div class="flex-1 flex flex-col justify-between">
+            <div class="module-container simulation-area border border-zinc-800 rounded p-6 flex flex-col items-center justify-center min-h-[320px] relative">
+                <span class="label-text absolute top-4 left-6">Geometry Simulation</span>
+                
+                <div id="svg-container" class="w-full max-w-[240px] mt-4">
+                    <svg viewBox="0 0 200 200" class="w-full h-auto overflow-visible">
+                        <defs>
+                            <marker id="arrow-red" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+                                <path d="M0,0 L8,4 L0,8 Z" fill="var(--danger-red)" />
+                            </marker>
+                            <marker id="arrow-red-start" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto">
+                                <path d="M8,0 L0,4 L8,8 Z" fill="var(--danger-red)" />
+                            </marker>
+                            <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+                                <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-blue)" />
+                            </marker>
+                            <marker id="arrow-blue-start" markerWidth="8" markerHeight="8" refX="0" refY="4" orient="auto">
+                                <path d="M8,0 L0,4 L8,8 Z" fill="var(--accent-blue)" />
+                            </marker>
+                        </defs>
+                        
+                        <!-- 圓孔示意圖組 -->
+                        <g id="svg-circular">
+                            <g id="circ-view-group">
+                                <circle id="circ-ghost-1" cx="50" cy="140" r="30" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="4" />
+                                <circle id="circ-ghost-2" cx="150" cy="140" r="30" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="4" />
+                                <circle id="circ-main" cx="100" cy="53.4" r="30" fill="#ff9d0022" stroke="var(--accent-orange)" stroke-width="2.5" />
+                                
+                                <!-- P 標註 (中心距) -->
+                                <path id="dim-p-path" d="M100,53.4 L150,140" stroke="var(--danger-red)" stroke-width="1.5" marker-end="url(#arrow-red)" />
+                                <text id="dim-p-text" x="135" y="105" fill="var(--danger-red)" font-family="Orbitron" font-size="12" font-weight="900">P</text>
+                                
+                                <!-- D 標註 (孔徑) -->
+                                <path id="dim-d-path" d="M70,53.4 L130,53.4" stroke="var(--accent-blue)" stroke-width="1.5" marker-start="url(#arrow-blue-start)" marker-end="url(#arrow-blue)" />
+                                <text id="dim-d-text" x="92" y="48" fill="var(--accent-blue)" font-family="Orbitron" font-size="12" font-weight="900">D</text>
+                            </g>
+                        </g>
+                        
+                        <!-- 六角孔示意圖組 -->
+                        <g id="svg-hex" class="hidden-svg">
+                            <g id="hex-view-group">
+                                <polygon id="hex-main" points="100,60 126,75 126,105 100,120 74,105 74,75" fill="#ff9d0022" stroke="var(--accent-orange)" stroke-width="2.5" />
+                                <polygon id="hex-ghost" points="100,60 126,75 126,105 100,120 74,105 74,75" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="3" />
+                                <path id="dim-hex-w" d="M74,90 L126,90" stroke="var(--accent-blue)" stroke-width="1.5" marker-start="url(#arrow-blue-start)" marker-end="url(#arrow-blue)" />
+                                <text id="txt-hex-w" x="92" y="85" fill="var(--accent-blue)" font-family="Orbitron" font-size="11" font-weight="900">W</text>
+                                <path id="dim-hex-p" d="M126,90 L152,90" stroke="var(--danger-red)" stroke-width="1.5" marker-start="url(#arrow-red-start)" marker-end="url(#arrow-red)" />
+                                <text id="txt-hex-p" x="132" y="85" fill="var(--danger-red)" font-family="Orbitron" font-size="11" font-weight="900">P</text>
+                            </g>
+                        </g>
+                    </svg>
+                </div>
+                
+                <div class="mt-4 text-[10px] text-zinc-600 font-mono tracking-widest uppercase">Real-time Geometry Scaling</div>
+            </div>
+
+            <div class="lcd-display mt-6 p-8 rounded-lg text-center relative">
+                <div class="absolute top-2 left-4 text-[10px] text-zinc-600 font-bold uppercase">Result_Output</div>
+                <div id="result-val" class="text-6xl font-black tracking-tighter text-blue-400">
+                    0.00<span class="text-2xl ml-2 opacity-40">%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 阻擋右鍵選單功能 ---
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    }, false);
+
+    const inputD = document.getElementById('input-d');
+    const inputP = document.getElementById('input-p');
+    const btnCalc = document.getElementById('btn-calc');
+    const resultVal = document.getElementById('result-val');
+    const labelD = document.getElementById('label-d');
+    const labelP = document.getElementById('label-p');
+    const warnD = document.getElementById('warn-d');
+    const svgCirc = document.getElementById('svg-circular');
+    const svgHex = document.getElementById('svg-hex');
+
+    const circMain = document.getElementById('circ-main');
+    const circGhosts = [document.getElementById('circ-ghost-1'), document.getElementById('circ-ghost-2')];
+    const circViewGroup = document.getElementById('circ-view-group');
+    
+    const hexView = document.getElementById('hex-view-group');
+    const hexGhost = document.getElementById('hex-ghost');
+    const hexWLine = document.getElementById('dim-hex-w');
+    const hexPLine = document.getElementById('dim-hex-p');
+    const hexWText = document.getElementById('txt-hex-w');
+    const hexPText = document.getElementById('txt-hex-p');
+
+    function updateUI() {
+        const mode = document.querySelector('input[name="arrangement"]:checked').value;
+        if(mode === 'circular-staggered') {
+            labelD.innerText = "孔直徑 D (mm)";
+            labelP.innerText = "中心距 P (mm)";
+            svgCirc.classList.remove('hidden-svg');
+            svgHex.classList.add('hidden-svg');
+        } else {
+            labelD.innerText = "孔內寬 W (mm)";
+            labelP.innerText = "梗寬 P (mm)";
+            svgCirc.classList.add('hidden-svg');
+            svgHex.classList.remove('hidden-svg');
+        }
+        validate();
+    }
+
+    function validate() {
+        const d = parseFloat(inputD.value);
+        const p = parseFloat(inputP.value);
+        const mode = document.querySelector('input[name="arrangement"]:checked').value;
+        
+        let valid = !isNaN(d) && !isNaN(p) && d > 0 && p > 0;
+        let logicError = (mode === 'circular-staggered' && d >= p);
+
+        if (logicError) {
+            warnD.classList.remove('hidden');
+            btnCalc.disabled = true;
+        } else {
+            warnD.classList.add('hidden');
+            btnCalc.disabled = !valid;
+        }
+
+        updateSimulation(d, p, mode);
+        if (valid && !logicError) calculate(d, p, mode);
+    }
+
+    function updateSimulation(d, p, mode) {
+        if (isNaN(d) || isNaN(p) || d <= 0 || p <= 0) return;
+
+        if (mode === 'circular-staggered') {
+            const ratio = Math.min(d / p, 0.98);
+            const visualRadius = 35 * ratio; 
+            
+            circMain.setAttribute('r', visualRadius);
+            circGhosts.forEach(g => g.setAttribute('r', visualRadius));
+            
+            document.getElementById('dim-d-path').setAttribute('d', `M${100 - visualRadius},53.4 L${100 + visualRadius},53.4`);
+            document.getElementById('dim-d-text').setAttribute('x', 94);
+            
+            circViewGroup.setAttribute('transform', `translate(0, 30)`);
+        } else {
+            const visualW = 50; 
+            const visualP = (p / d) * visualW; 
+            const offset = visualW + visualP;
+            
+            hexGhost.setAttribute('transform', `translate(${offset}, 0)`);
+            hexWLine.setAttribute('d', `M75,90 L125,90`);
+            hexWText.setAttribute('x', 94);
+            
+            const pStart = 125;
+            const pEnd = 125 + visualP;
+            hexPLine.setAttribute('d', `M${pStart},90 L${pEnd},90`);
+            hexPText.setAttribute('x', pStart + (visualP/2) - 4);
+            
+            const totalHexW = visualW + visualP;
+            const scale = Math.min(1.1, 160 / (totalHexW + 50));
+            const xShift = (200 - (totalHexW * scale)) / 2 - (75 * scale);
+            hexView.setAttribute('transform', `translate(${xShift}, 40) scale(${scale})`);
+        }
+    }
+
+    function calculate(d, p, mode) {
+        let ar = mode === 'circular-staggered' 
+            ? (Math.PI / (2 * Math.sqrt(3))) * Math.pow(d / p, 2) * 100
+            : Math.pow(d / (d + p), 2) * 100;
+        
+        const target = ar;
+        let current = parseFloat(resultVal.innerText) || 0;
+        const duration = 10; 
+        const step = (target - current) / duration;
+        let count = 0;
+        
+        const timer = setInterval(() => {
+            current += step;
+            count++;
+            if (count >= duration) {
+                resultVal.innerHTML = `${target.toFixed(4)}<span class="text-2xl ml-2 opacity-40">%</span>`;
+                clearInterval(timer);
+            } else {
+                resultVal.innerHTML = `${current.toFixed(2)}<span class="text-2xl ml-2 opacity-40">%</span>`;
+            }
+        }, 30);
+    }
+
+    inputD.addEventListener('input', validate);
+    inputP.addEventListener('input', validate);
+    document.querySelectorAll('input[name="arrangement"]').forEach(r => {
+        r.addEventListener('change', updateUI);
+    });
+
+    updateUI();
+</script>
+
+</body>
+</html>
